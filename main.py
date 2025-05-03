@@ -1,5 +1,7 @@
 from flask import jsonify
 from flask import Flask,render_template, request # https://www.geeksforgeeks.org/pass-javascript-variables-to-python-in-flask/
+import redis  # NEW
+from uuid import uuid4  # NEW
 
 app = Flask(__name__,template_folder="templates")
 
