@@ -13,7 +13,7 @@ def process():
     import requests
 
     # Create a request header or else we will get the 403 error
-    headers = {'User-Agent': "jordansapanidis01@gmail.com"}
+    headers = {'User-Agent': "fin22144@uom.edu.gr"}
 
     base_url_1 = 'https://data.sec.gov/api/xbrl/companyfacts/CIK' 
     base_url = 'https://data.sec.gov/api/xbrl/companyconcept/CIK'
@@ -43,8 +43,8 @@ def process():
         elif 'ifrs-full' in list_with_taxonomies:
             return 'ifrs-full'
         else:
-            #print('Company doesn't has IFRS or US-GAAP')
-            return "Company doesn't has IFRS or US-GAAP"
+            #print('Company doesn't have IFRS or US-GAAP')
+            return "Company doesn't have IFRS or US-GAAP"
         
     def GetStockData(CIK):
         # Check for the facts key
