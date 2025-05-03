@@ -1,9 +1,37 @@
 from flask import jsonify
-from flask import Flask,render_template, request # https://www.geeksforgeeks.org/pass-javascript-variables-to-python-in-flask/
+from flask import Flask,render_template, request, session  # https://www.geeksforgeeks.org/pass-javascript-variables-to-python-in-flask/
 import redis  # NEW
 from uuid import uuid4  # NEW
 
 app = Flask(__name__,template_folder="templates")
+app.secret_key = 'supersecretkey'
+
+# Connect to Redis
+r = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
+
+MAX_USERS = 10
+
+# Utility function to limit users
+@app.before_request
+def limit_users():
+    user_id = session.get('user_id')
+
+    # If user is not logged in
+    if not user_id:
+        if r.scard("active_users") >= MAX_USERS:
+            return "User limit reached. Try again later.", 503
+        # Assign a new unique user ID and track
+        user_id = str(uuid4())
+        session['user_id'] = user_id
+        r.sadd("active_users", user_id)  # Add user to Redis set
+
+@app.teardown_request
+def remove_user(exception=None):
+    # Cleanup user on session end (when the user logs out or session expires)
+    user_id = session.pop('user_id', None)
+    if user_id:
+        r.srem("active_users", user_id)  # Remove user from Redis set
+
 
 @app.route("/")
 def hello():
