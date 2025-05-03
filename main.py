@@ -7,7 +7,7 @@ app = Flask(__name__,template_folder="templates")
 app.secret_key = 'supersecretkey'
 
 # Connect to Redis
-r = redis.StrictRedis(host='https://profitsearcher.onrender.com/', port=6379, db=0, decode_responses=True)
+r = redis.StrictRedis(host='profitsearcher.onrender.com', port=6379, db=0, decode_responses=True)
 
 MAX_USERS = 10
 
