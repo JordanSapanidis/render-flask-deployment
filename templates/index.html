@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profit Searcher</title>
+    <style>
+    body{
+        font-family: Arial, sans-serif;
+        background-color: #f2f6f8;
+    }
+
+    #container{
+        max-width: 850px;
+        margin: 40px auto;
+        padding: 40px;
+        background-color: #ffffff;       
+        border-radius: 10px;
+        box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    }
+
+    h2{
+        text-align: center;
+        color: #48484d;
+    }
+
+    #description_1 p{
+        padding: 15px 20px;
+        border-radius: 5px;
+        background-color: #e8f4fd;
+        border-left: 5px solid #3498db;
+        color: #2c3e50;
+    }
+
+    #description_2{
+        padding: 15px 20px;
+        border-radius: 5px;
+        background-color: #fff3cd;
+        border-left: 5px solid #ffc107;
+    }
+
+    #description_2 h3 {
+        margin-top: 0;
+        color: #856404;
+    }
+
+    #description_2 ul{
+        margin: 0;
+        padding-left: 20px;
+        color: #333;
+    }
+
+    span{
+        display: block;
+        margin-top: 25px;
+        font-weight: bold;
+        color: #000000;
+    }
+
+    input{
+        padding: 8px 12px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-left: 10px;
+        width: 75px;
+    }
+
+    button{
+        padding: 10px 18px;
+        margin-top: 15px;
+        margin-right: 100px; 
+        font-size: 14px;
+        border: 2px solid #ffffff;  
+        border-radius: 0.9em;
+        cursor: pointer;     
+    }
+
+    #search{
+        background-color: #007bff;
+        color: #fff;
+    }
+
+    #search:hover{
+        background-color: #0056b3;
+    }
+
+    #download{
+        background-color: #28a745;
+        color: #fff;
+    }
+
+    #download:hover{
+        background-color: #1e7e34;
+    }
+
+    #output{
+        margin-top: 30px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table{
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        background-color: #ffffff;
+    }
+
+    th, td{
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    th.title{
+        background-color: #343a40;
+        color: #ffffff;
+    }
+
+    tr:nth-child(even){
+        background-color: #f9f9f9;
+    }
+
+    tr:hover{
+        background-color: #f1f1f1;
+    }
+
+    p {
+        color: #c0392b;
+        font-weight: bold;
+    }
+   
+    .hidden{
+        display: none;
+    }
+
+    .unhide{
+        display: block;
+    }
+
+    </style>
+</head>
+
+<body>
+<div id="container">
+
+    <h2>Profit Searcher (demo version)</h2>
+    
+    <div id="description_1">
+        <p>This program queries the SEC API to retrieve a company's net income data for up to 30 quarters back. The results can then be downloaded in XLSX format for further analysis.</p> 
+    </div>
+
+    <div id="description_2">
+    <h3>!Caution</h3>
+    <ul>
+    <li>The company must have a <b>Central Index Key (CIK)</b> code</li>
+    <li>The company should follow either US <b>GAAP</b> or <b>IFRS</b></li>
+    <li>The company should publish financial statements <b>quarterly</b> (every 3 months).</li>
+    </ul>
+    </div>
+
+
+    <span>Stock Ticker : <input id="ticker" type="text" maxlength="8" placeholder="e.g. APPL" autocomplete="off"></span>
+    <button id="search">Search</button>
+    <button id="download" class="hidden">Download Data</button>
+    <div id="output"></div>
+    
+</div>    
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> <!-- to download excel -->
+<script>
+
+let isSearchDisabled = false;
+let isDownloadDisabled = false;
+
+function temporarilyDisable(buttonId) {
+    const button = document.getElementById(buttonId);
+    button.disabled = true;
+    button.style.cursor = "not-allowed";
+}
+
+function enableAgain(buttonId) {
+    const button = document.getElementById(buttonId);
+    button.disabled = false;
+    button.style.cursor = "pointer";
+}
+
+function sanitizeTicker(ticker) {
+    return ticker.replace(/[^a-zA-Z]/g, '').toUpperCase();
+}
+
+const searchBtn = document.getElementById('search')
+const downloadBtn = document.getElementById('download')
+
+searchBtn.addEventListener("click",myfunction)
+downloadBtn.addEventListener("click",download)
+
+
+function myfunction() {
+
+    if (isSearchDisabled) return;
+    isSearchDisabled = true;
+    temporarilyDisable("search");
+    temporarilyDisable("download");
+
+    var stock = sanitizeTicker(document.getElementById("ticker").value);
+
+    if (stock === "") {
+        const downloadBtn = document.getElementById('download')
+        document.getElementById("output").innerHTML = "<p>Please fill in the input field first</p>";
+        if(downloadBtn.className === "unhide"){
+            downloadBtn.classList.remove("unhide");
+            downloadBtn.classList.add("hidden");
+        }
+        isSearchDisabled = false;
+        enableAgain('search')
+        enableAgain('download')
+        return;
+    }
+
+    $.ajax({
+        url:"/process",
+        type:"POST",
+        data: { 'data': stock },
+        success: function(response) {
+            var downloadBtn = document.getElementById("download");
+            var outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = ""; // Clear previous output
+            console.log(response.result)
+            if (response.result && Array.isArray(response.result)) {
+            let html = "<table id='table'>";
+                html += "<tr> <th class='title'>Net Income</th> <th class='title'>Period</th> <th class='title'>Start Date</th> <th class='title'>End Date</th> <th class='title'>Filed</th> </tr>" 
+                    
+                response.result.forEach(function(item) {
+                    html += `<tr> <td class="row">${item.val}</td> <td class="row">${item.fp}</td> <td class="row">${item.start}</td> <td class="row">${item.end}</td> <td class="row">${item.filed}</td> </tr>`
+                });
+
+            html += "</table>";
+            outputDiv.innerHTML = html;
+            isSearchDisabled = false;
+            enableAgain('search')
+            enableAgain('download')    
+
+                if(downloadBtn.className === "hidden"){
+                    downloadBtn.classList.remove("hidden");
+                    downloadBtn.classList.add("unhide");
+                }
+            
+
+            } else {
+            outputDiv.innerHTML = "<p>Oops something went wrong!</p>";
+            downloadBtn.classList.remove("unhide");
+            downloadBtn.classList.add("hidden");
+            }
+
+            isSearchDisabled = false;
+            enableAgain('search')
+            enableAgain('download')
+        },
+        error: function(error) {
+                    console.log(error);
+                    downloadBtn.classList.remove("unhide");
+                    downloadBtn.classList.add("hidden");
+                    isSearchDisabled = false;
+                    enableAgain('search')
+                    enableAgain('download')
+        }
+    })
+}
+
+function download(){
+  exportTableToXLSX('table','profit_data.xlsx')
+}
+
+function exportTableToXLSX(tableID, filename = "data.xlsx") {
+    if (isDownloadDisabled) return;
+    isDownloadDisabled = true;
+    temporarilyDisable("download");
+
+    var stock = sanitizeTicker(document.getElementById("ticker").value);
+    const table = document.getElementById(tableID);
+    if (!table) {
+        alert("Table not found!");
+        enableAgain("download")
+        return;
+    }
+
+    // Convert HTML table to a SheetJS worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.table_to_sheet(table);
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+    // Export to xlsx file
+    XLSX.writeFile(wb, `${stock} ${filename}`);
+    isDownloadDisabled = false;
+    enableAgain("download")
+}
+
+</script>
+</body>
+</html>
