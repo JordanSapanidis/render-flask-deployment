@@ -4,20 +4,6 @@ from flask import Flask,render_template, request, session  # https://www.geeksfo
 
 app = Flask(__name__,template_folder="templates")
 
-@app.teardown_request
-def remove_user(exception=None):
-    """Cleanup user on session end (when the user logs out or session expires)"""
-    try:
-        user_id = session.pop('user_id', None)
-        if user_id:
-            r.srem("active_users", user_id)  # Remove user from Redis set
-            logging.debug(f"User ID {user_id} removed from active_users.")
-    except redis.ConnectionError as e:
-        logging.error(f"Redis connection error during cleanup: {e}")
-    except Exception as e:
-        logging.error(f"Unexpected error during cleanup: {e}")
-
-
 @app.route("/")
 def hello():
     return render_template('index.html')
