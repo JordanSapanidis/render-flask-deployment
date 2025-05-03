@@ -1,6 +1,6 @@
 from flask import jsonify
 from flask import Flask,render_template, request, session  # https://www.geeksforgeeks.org/pass-javascript-variables-to-python-in-flask/
-
+import secrets
 
 app = Flask(__name__,template_folder="templates")
 ###########################################################################
