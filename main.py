@@ -1,50 +1,8 @@
 from flask import jsonify
 from flask import Flask,render_template, request, session  # https://www.geeksforgeeks.org/pass-javascript-variables-to-python-in-flask/
-import redis  # NEW
-from uuid import uuid4  # NEW
-import logging
+
 
 app = Flask(__name__,template_folder="templates")
-app.secret_key = 'supersecretkey'
-
-# Connect to Redis (using your remote Redis instance URL)
-r = redis.StrictRedis(
-    host='profitsearcher.onrender.com',  # Replace with your actual Redis host
-    port=6379,
-    db=0,
-    decode_responses=True,
-    socket_timeout=5,  # Set timeout in case Redis is slow to respond
-    retry_on_timeout=True  # Retry connection if timeout occurs
-)
-
-MAX_USERS = 10  # Max concurrent users
-
-# Utility function to limit users
-@app.before_request
-def limit_users():
-    try:
-        user_id = session.get('user_id')
-
-        # If user is not logged in
-        if not user_id:
-            # Check if the number of active users has reached the limit
-            if r.scard("active_users") >= MAX_USERS:
-                return "User limit reached. Try again later.", 503
-
-            # Assign a new unique user ID and track
-            user_id = str(uuid4())
-            session['user_id'] = user_id
-            r.sadd("active_users", user_id)  # Add user to Redis set
-            logging.debug(f"New user ID {user_id} added to active_users.")
-    
-    except redis.ConnectionError as e:
-        # Handle Redis connection error
-        logging.error(f"Redis connection error: {e}")
-        return "Service temporarily unavailable due to database connection issues.", 500
-    except Exception as e:
-        # Handle other unexpected errors
-        logging.error(f"Unexpected error: {e}")
-        return "An unexpected error occurred.", 500
 
 @app.teardown_request
 def remove_user(exception=None):
