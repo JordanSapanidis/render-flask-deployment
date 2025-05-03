@@ -3,6 +3,39 @@ from flask import Flask,render_template, request, session  # https://www.geeksfo
 
 
 app = Flask(__name__,template_folder="templates")
+###########################################################################
+app.secret_key = secrets.token_hex(16)
+
+MAX_USERS = 10  # Max concurrent users
+current_users = 0  # Track active users (this is stored in memory)
+
+# Utility function to limit users
+@app.before_request
+def limit_users():
+    global current_users
+    user_id = session.get('user_id')
+
+    # If user is not logged in
+    if not user_id:
+        # Check if the number of active users has reached the limit
+        if current_users >= MAX_USERS:
+            return "User limit reached. Try again later.", 503
+        
+        # Assign a new unique user ID and track
+        user_id = str(id(session))  # Use session ID as a unique user ID
+        session['user_id'] = user_id
+
+        current_users += 1  # Increment active users counter
+
+# Cleanup user when the session ends
+@app.teardown_request
+def remove_user(exception=None):
+    global current_users
+    user_id = session.pop('user_id', None)
+    
+    if user_id:
+        current_users -= 1  # Decrement active users counter
+############################################################################
 
 @app.route("/")
 def hello():
