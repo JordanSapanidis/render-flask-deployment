@@ -6,7 +6,7 @@ app = Flask(__name__,template_folder="templates")
 ###########################################################################
 app.secret_key = secrets.token_hex(16)
 
-MAX_USERS = 10  # Max concurrent users
+MAX_USERS = 20  # Max concurrent users
 current_users = 0  # Track active users (this is stored in memory)
 
 # Utility function to limit users
